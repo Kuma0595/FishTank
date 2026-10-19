@@ -5,3 +5,7 @@ dist/
 .openai/*.lock
 
 *.tsbuildinfo
+
+# Local visual verification artifacts
+.playwright-cli/
+output/
