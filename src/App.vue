@@ -72,7 +72,7 @@ onBeforeUnmount(()=>{mounted=false;clearTimeout(saveTimer);clearTimeout(toastTim
   </section>
   <aside class="sidebar" v-if="!observe">
    <div class="sidebar-title"><div><span class="eyebrow">MAKE IT YOURS</span><h2>布置你的小世界</h2></div><span class="edition">VOL. 01</span></div>
-   <div class="library-tabs"><button :class="{active:tab==='fish'}" @click="tab='fish'"><FishSymbol :size="18"/>鱼儿 <span>10</span></button><button :class="{active:tab==='decor'}" @click="tab='decor'"><Leaf :size="18"/>造景 <span>{{decorations.length}}</span></button></div>
+   <div class="library-tabs"><button :class="{active:tab==='fish'}" @click="tab='fish'"><FishSymbol :size="18"/>鱼儿 <span>{{species.length}}</span></button><button :class="{active:tab==='decor'}" @click="tab='decor'"><Leaf :size="18"/>造景 <span>{{decorations.length}}</span></button></div>
    <div class="library-controls"><div class="search-box"><Search :size="16"/><input v-model="query" :placeholder="tab==='fish'?'找一位水下新朋友':'寻找水草、石头或沉木'" aria-label="搜索素材"/><button v-if="query" class="icon-button" @click="query=''" aria-label="清除搜索"><X :size="14"/></button></div>
    <div class="filter-tabs" v-if="tab==='fish'"><button v-for="f in [{id:'all',label:'全部'},{id:'cold',label:'冷水鱼'},{id:'warm',label:'热带 / 广温'}]" :key="f.id" :class="{active:filter===f.id}" @click="filter=f.id">{{f.label}}</button></div>
    <div class="filter-tabs" v-else><button v-for="f in [{id:'all',label:'全部'},{id:'plant',label:'水草'},{id:'rock',label:'石景'},{id:'wood',label:'沉木'}]" :key="f.id" :class="{active:filter===f.id}" @click="filter=f.id">{{f.label}}</button></div></div>

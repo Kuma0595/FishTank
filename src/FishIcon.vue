@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Species } from './catalog'
-import { whitecloudFishThumbnail } from './fish-assets'
-defineProps<{fish:Species}>()
+import { fishThumbnailForSpecies } from './fish-assets'
+const props = defineProps<{fish:Species}>()
+const thumbnail = computed(() => fishThumbnailForSpecies(props.fish.id))
 </script>
 <template>
-<img v-if="fish.id==='whitecloud'" :src="whitecloudFishThumbnail" class="fish-illustration model-thumbnail" alt=""/><svg v-else viewBox="0 0 150 86" aria-hidden="true" class="fish-illustration">
+<img v-if="thumbnail" :src="thumbnail" class="fish-illustration model-thumbnail" alt=""/><svg v-else viewBox="0 0 150 86" aria-hidden="true" class="fish-illustration">
  <ellipse cx="72" cy="75" rx="38" ry="3" fill="currentColor" opacity=".045"/>
  <g :transform="fish.shape==='bottom'?'translate(0 8)':''">
  <path :d="fish.shape==='fan'?'M92 42 Q116 17 137 21 Q130 42 138 63 Q116 67 92 45Z':fish.shape==='round'?'M94 42 Q117 23 134 25 L125 43 L135 62 Q115 64 94 47Z':'M94 43 L124 25 L119 43 L125 61Z'" :fill="fish.accent" opacity=".85"/>

@@ -3,10 +3,17 @@ import assert from 'node:assert/strict'
 import { initialState, parseState, cloneState } from './model'
 import { species } from './catalog'
 
-test('ten distinct freshwater entries and default tank survive a JSON round trip',()=>{
- assert.equal(species.length,10);assert.equal(new Set(species.map(s=>s.id)).size,10)
+test('eleven distinct freshwater entries and default tank survive a JSON round trip',()=>{
+ assert.equal(species.length,11);assert.equal(new Set(species.map(s=>s.id)).size,11)
  const state=initialState();const parsed=parseState(JSON.parse(JSON.stringify(state)));assert.deepEqual(parsed,state)
  assert.equal(new Set([...state.fish,...state.items].map(v=>v.uid)).size,state.fish.length+state.items.length)
+})
+test('cardinal tetras coexist with existing fish in saved and exported tanks',()=>{
+ const state=initialState()
+ state.fish.push({uid:crypto.randomUUID(),id:'cardinal'},{uid:crypto.randomUUID(),id:'whitecloud'})
+ const restored=parseState(JSON.parse(JSON.stringify(state)))
+ assert.deepEqual(restored,state)
+ assert.equal(species.find(s=>s.id==='cardinal')?.group,'warm')
 })
 test('snapshots do not mutate the original tank',()=>{const state=initialState();const snapshot=cloneState(state);snapshot.fish.pop();snapshot.items[0]!.x=2;assert.equal(state.fish.length,8);assert.notEqual(state.items[0]!.x,2)})
 test('reject incompatible versions, unknown species, invalid transforms and duplicate identities',()=>{

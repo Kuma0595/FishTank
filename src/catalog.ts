@@ -9,6 +9,7 @@ export const species: Species[] = [
   {id:'medaka',name:'青鳉',latin:'Oryzias latipes',group:'cold',label:'银光 · 上层',color:'#dfd9b2',accent:'#efcf7b',size:0.40,shape:'slim',pattern:'plain',speed:0.8,note:'小巧通透，喜欢在水面下轻轻穿行。',temperature:'广温鱼'},
   {id:'guppy',name:'孔雀鱼',latin:'Poecilia reticulata',group:'warm',label:'彩尾 · 灵动',color:'#e8b263',accent:'#de765d',size:0.52,shape:'fan',pattern:'spots',speed:0.85,note:'扇形大尾巴像一片轻盈的彩色绸缎。',temperature:'热带鱼'},
   {id:'neon',name:'红绿灯',latin:'Paracheirodon innesi',group:'warm',label:'蓝红 · 群游',color:'#5b9b9e',accent:'#db5d50',size:0.42,shape:'slim',pattern:'neon',speed:1.05,note:'一抹蓝光，一笔朱红，是草缸里的小小流星。',temperature:'热带鱼'},
+  {id:'cardinal',name:'宝莲灯',latin:'Paracheirodon axelrodi',group:'warm',label:'蓝光 · 红腹',color:'#32b8d4',accent:'#e43f43',size:0.46,shape:'slim',pattern:'neon',speed:1.0,note:'明亮的宝蓝侧线，映着从头延伸到尾的鲜红鱼腹。',temperature:'热带鱼'},
   {id:'zebra',name:'斑马鱼',latin:'Danio rerio',group:'warm',label:'条纹 · 活泼',color:'#d8cd9e',accent:'#4b6869',size:0.49,shape:'slim',pattern:'stripe',speed:1.3,note:'身披横向条纹，游动轻快，给鱼缸添一点活力。',temperature:'广温鱼'},
   {id:'molly',name:'玛丽鱼',latin:'Poecilia sphenops',group:'warm',label:'墨色 · 从容',color:'#3e4a49',accent:'#747c6e',size:0.61,shape:'tall',pattern:'plain',speed:0.75,note:'柔和的黑色轮廓，在明亮水草间显得格外沉静。',temperature:'热带鱼'},
   {id:'platy',name:'月光鱼',latin:'Xiphophorus maculatus',group:'warm',label:'暖橙 · 温和',color:'#ed9c5d',accent:'#c76d42',size:0.55,shape:'tall',pattern:'plain',speed:0.8,note:'像一枚橙色的小月亮，缓缓经过沉木和水草。',temperature:'热带鱼'},

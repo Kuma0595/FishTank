@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import * as THREE from 'three'
 import type { GLTFLoader, GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { normalizeFishModel, FishModelLibrary } from './fish-model'
-import { fishModelForSpecies, whitecloudFishModel } from './fish-assets'
+import { fishModelForSpecies, fishThumbnailForSpecies, whitecloudFishModel, cardinalFishModel, whitecloudFishThumbnail, cardinalFishThumbnail } from './fish-assets'
 import { species } from './catalog'
 
 function source() {
@@ -75,8 +75,8 @@ test('late downloads cannot resurrect models after a tank is closed', async () =
   await assert.rejects(pending, /鱼缸已经关闭/)
 })
 
-test('published GLB is self-contained and stays within the per-fish geometry budget', async () => {
-  const data = await readFile(new URL('../public/models/fish/uploaded-fish.glb', import.meta.url))
+for (const file of ['uploaded-fish.glb', 'cardinal-tetra.glb']) test(`${file} is self-contained and stays within the per-fish geometry budget`, async () => {
+  const data = await readFile(new URL(`../public/models/fish/${file}`, import.meta.url))
   assert.equal(data.toString('ascii', 0, 4), 'glTF')
   assert.equal(data.readUInt32LE(4), 2)
   assert.ok(data.length < 1_200_000)
@@ -88,14 +88,30 @@ test('published GLB is self-contained and stays within the per-fish geometry bud
     assert.ok(primitive.attributes.TEXCOORD_0 !== undefined)
   }
   assert.ok(triangles > 0 && triangles <= 25_000)
+  if (file === 'cardinal-tetra.glb') {
+    // Conversion welds duplicate vertices but must retain every source triangle and the JPEG bytes.
+    assert.equal(triangles, 19_042)
+    assert.equal(json.animations?.length ?? 0, 0)
+    const image = json.bufferViews[json.images[0].bufferView]
+    const binaryOffset = 20 + jsonLength + 8
+    const embeddedImage = data.subarray(binaryOffset + (image.byteOffset ?? 0), binaryOffset + (image.byteOffset ?? 0) + image.byteLength)
+    const originalImage = await readFile(new URL('../assets/source/cardinal-tetra/tripo_convert_92270b96-0002-4256-85f2-b7c221a0a452.fbm/tripo_image_92270b96-0002-4256-85f2-b7c221a0a452_0_0.jpg', import.meta.url))
+    assert.deepEqual(embeddedImage, originalImage)
+  }
   assert.ok(json.images.every((image: {bufferView?: number; uri?: string}) => image.bufferView !== undefined && !image.uri))
   assert.ok(json.buffers.every((buffer: {uri?: string}) => !buffer.uri))
 })
 
-test('the supplied model is always whitecloud and cannot override any other species', () => {
+test('each supplied model and thumbnail belongs only to its own species', () => {
   assert.equal(fishModelForSpecies('whitecloud'), whitecloudFishModel)
-  for (const fish of species.filter(fish => fish.id !== 'whitecloud')) {
+  assert.equal(fishModelForSpecies('cardinal'), cardinalFishModel)
+  assert.equal(fishThumbnailForSpecies('whitecloud'), whitecloudFishThumbnail)
+  assert.equal(fishThumbnailForSpecies('cardinal'), cardinalFishThumbnail)
+  assert.notEqual(whitecloudFishModel.path, cardinalFishModel.path)
+  for (const fish of species.filter(fish => !['whitecloud', 'cardinal'].includes(fish.id))) {
     assert.equal(fishModelForSpecies(fish.id), undefined)
+    assert.equal(fishThumbnailForSpecies(fish.id), undefined)
   }
   assert.equal(fishModelForSpecies('__proto__'), undefined)
+  assert.equal(fishThumbnailForSpecies('__proto__'), undefined)
 })
