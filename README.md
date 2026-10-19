@@ -63,7 +63,9 @@ npm run preview
 
 源码位于 `main`，构建产物位于 `gh-pages`。Pages 发布源为 `gh-pages` 分支的根目录，访问地址为 https://kuma0595.github.io/FishTank/ 。Vite 使用相对资源路径，同时适配项目子路径与本地预览。
 
-修改后先提交并推送源码，再运行：
+本项目的默认交付流程是：完成修改与必要验证后，由 Codex 提交并推送源码到 GitHub，再自动执行 Pages 发布并检查结果，无需再次提醒或确认。约定见 [AGENTS.md](./AGENTS.md)。这里的自动发布由 Codex 在交付过程中执行。
+
+手动操作时，先提交并推送源码，再运行：
 
 ```sh
 npm run deploy
