@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises'
 import * as THREE from 'three'
 import type { GLTFLoader, GLTF } from 'three/addons/loaders/GLTFLoader.js'
 import { normalizeFishModel, FishModelLibrary } from './fish-model'
+import { fishModelForSpecies, whitecloudFishModel } from './fish-assets'
+import { species } from './catalog'
 
 function source() {
   const scene = new THREE.Group()
@@ -88,4 +90,12 @@ test('published GLB is self-contained and stays within the per-fish geometry bud
   assert.ok(triangles > 0 && triangles <= 25_000)
   assert.ok(json.images.every((image: {bufferView?: number; uri?: string}) => image.bufferView !== undefined && !image.uri))
   assert.ok(json.buffers.every((buffer: {uri?: string}) => !buffer.uri))
+})
+
+test('the supplied model is always whitecloud and cannot override any other species', () => {
+  assert.equal(fishModelForSpecies('whitecloud'), whitecloudFishModel)
+  for (const fish of species.filter(fish => fish.id !== 'whitecloud')) {
+    assert.equal(fishModelForSpecies(fish.id), undefined)
+  }
+  assert.equal(fishModelForSpecies('__proto__'), undefined)
 })

@@ -1,7 +1,7 @@
 import { speciesById, decorById } from './catalog'
 export interface Item { uid:string; id:string; x:number; z:number; rotation:number; scale:number }
 export interface Fish {uid:string; id:string}
-export interface TankState {version:1; name:string; fish:Fish[]; items:Item[]; light:boolean; sand:string; savedAt:number; modelSpecies:string|null}
+export interface TankState {version:1; name:string; fish:Fish[]; items:Item[]; light:boolean; sand:string; savedAt:number}
 export const uid = () => crypto.randomUUID()
 export function initialState():TankState {
  return {version:1,name:'窗边的水下花园',fish:[...Array.from({length:5},()=>({uid:uid(),id:'neon'})),...Array.from({length:2},()=>({uid:uid(),id:'guppy'})),{uid:uid(),id:'panda'}],items:[
@@ -16,19 +16,18 @@ export function initialState():TankState {
   {uid:uid(),id:'carpet',x:-1,z:0.65,rotation:0,scale:1.1},
   {uid:uid(),id:'carpet',x:1.4,z:0.6,rotation:0.6,scale:0.8},
   {uid:uid(),id:'pebble',x:-0.2,z:0.75,rotation:0.7,scale:0.65},
- ],light:true,sand:'natural',savedAt:Date.now(),modelSpecies:null}
+ ],light:true,sand:'natural',savedAt:Date.now()}
 }
 const finite = (n:unknown): n is number => typeof n === 'number' && Number.isFinite(n)
 export function parseState(raw:unknown):TankState {
  if(!raw || typeof raw!=='object') throw new Error('存档格式无效')
  const s=raw as Record<string,unknown>
  if(s.version!==1 || typeof s.name!=='string' || s.name.length>40 || !Array.isArray(s.fish) || !Array.isArray(s.items) || s.fish.length>30 || s.items.length>100 || typeof s.light!=='boolean' || !['natural','white','dark'].includes(s.sand as string)) throw new Error('存档格式或版本无效')
- if(s.modelSpecies!=null&&(typeof s.modelSpecies!=='string'||!Object.hasOwn(speciesById,s.modelSpecies)))throw new Error('存档的模型鱼种无效')
  const ids=new Set<string>()
  const validId=(v:Record<string,unknown>)=>{if(typeof v.uid!=='string'||ids.has(v.uid)) throw new Error('存档对象标识无效'); ids.add(v.uid)}
  const fish=s.fish.map((v)=>{if(!v||typeof v!=='object'||(typeof v.id!=='string'||!Object.hasOwn(speciesById,v.id)))throw new Error('存档包含未知鱼种');validId(v);return {uid:v.uid,id:v.id} as Fish})
  const items=s.items.map(v=>{if(!v||typeof v!=='object'||(typeof v.id!=='string'||!Object.hasOwn(decorById,v.id))||![v.x,v.z,v.rotation,v.scale].every(finite)||Math.abs(v.x)>2.5||Math.abs(v.z)>1.15||v.scale<0.4||v.scale>1.8)throw new Error('存档造景数据无效');validId(v);return {uid:v.uid,id:v.id,x:v.x,z:v.z,rotation:v.rotation,scale:v.scale} as Item})
- return {version:1,name:s.name,fish,items,light:s.light,sand:s.sand as string,savedAt:finite(s.savedAt)?s.savedAt:Date.now(),modelSpecies:typeof s.modelSpecies==='string'?s.modelSpecies:null}
+ return {version:1,name:s.name,fish,items,light:s.light,sand:s.sand as string,savedAt:finite(s.savedAt)?s.savedAt:Date.now()}
 }
 export const cloneState=(s:TankState):TankState=>JSON.parse(JSON.stringify(s))
 const DB='little-aquarium'; const STORE='tanks'

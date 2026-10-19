@@ -23,10 +23,14 @@ test('reject incompatible versions, unknown species, invalid transforms and dupl
 })
 test('empty tanks can be restored without silently reintroducing inhabitants',()=>{const state=initialState();state.fish=[];state.items=[];const restored=parseState(state);assert.equal(restored.fish.length,0);assert.equal(restored.items.length,0)})
 
-test('old saves remain readable, and custom model mapping survives export/import',()=>{
- const state=initialState();const legacy={...state} as Partial<typeof state>;delete legacy.modelSpecies
- assert.equal(parseState(legacy).modelSpecies,null)
- state.modelSpecies='neon';assert.equal(parseState(JSON.parse(JSON.stringify(state))).modelSpecies,'neon')
- assert.throws(()=>parseState({...state,modelSpecies:'unknown'}))
- assert.throws(()=>parseState({...state,modelSpecies:'__proto__'}))
+test('legacy model assignments are discarded while fish and scenery survive import/export',()=>{
+ const state=initialState()
+ for(const previous of [undefined,null,'neon','guppy','whitecloud']){
+  const legacy={...state,modelSpecies:previous}
+  const restored=parseState(JSON.parse(JSON.stringify(legacy)))
+  assert.deepEqual(restored.fish,state.fish)
+  assert.deepEqual(restored.items,state.items)
+  assert.equal(Object.hasOwn(restored,'modelSpecies'),false)
+  assert.deepEqual(parseState(JSON.parse(JSON.stringify(restored))),restored)
+ }
 })
