@@ -1,5 +1,7 @@
 # 一方水景 · A Little Aquarium
 
+[在线试玩](https://kuma0595.github.io/FishTank/) · [GitHub 源码](https://github.com/Kuma0595/FishTank)
+
 单鱼缸 Web 原型。用 Vue 3 + TypeScript + Three.js 实现，主要体验是淡水鱼观赏与自由造景。
 
 ## 本地运行
@@ -53,3 +55,17 @@ npm run preview
 - `src/model.test.ts`：往返存档、快照隔离、无效输入与空缸恢复测试。
 
 物种身份参考 FishBase：[金鱼](https://www.fishbase.org/summary/Carassius_auratus.html)、[白云金丝](https://www.fishbase.se/summary/Tanichthys-albonubes)、[红绿灯](https://www.fishbase.se/summary/10691)、[月光鱼](https://www.fishbase.se/summary/Xiphophorus-maculatus.html)。这些参考用于命名，不构成本应用对真实饲养的指导。界面字体使用 Google Fonts，可在网络不可用时回退至系统中文字体。
+
+## GitHub Pages 发布
+
+源码位于 `main`，构建产物位于 `gh-pages`。Pages 发布源为 `gh-pages` 分支的根目录，访问地址为 https://kuma0595.github.io/FishTank/ 。Vite 使用相对资源路径，同时适配项目子路径与本地预览。
+
+修改后先提交并推送源码，再运行：
+
+```sh
+npm run deploy
+```
+
+此命令先进行类型检查和生产构建，成功后在临时目录更新 `gh-pages`，不切换当前工作分支、不强制推送。它需要仓库写权限；已登录的 GitHub CLI 会被用于 Git 认证，否则沿用 Git 自身的认证配置。Pages 随发布分支的更新自动部署，执行结果可在仓库 Actions 或 Settings → Pages 查看。
+
+仅推送 `main` 不会更新网页；每次发布都需要执行上述命令。使用 GitHub Pages 时不需要 `.openai/hosting.json`，该文件仅保留原有 Sites 部署配置。不同站点使用各自的本地存档，需要通过 JSON 导出／导入迁移。
