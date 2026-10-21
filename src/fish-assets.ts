@@ -1,7 +1,7 @@
 import type { FishModelDefinition } from './fish-model'
 
 export const whitecloudFishModel: FishModelDefinition = {
-  path: `${import.meta.env?.BASE_URL ?? "/"}models/fish/uploaded-fish.glb`,
+  path: `${import.meta.env?.BASE_URL ?? "/"}models/fish/whitecloud-swim.glb`,
   rotationY: -Math.PI / 2,
   length: 1.22,
 }

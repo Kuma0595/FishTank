@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 
 export interface FishModelDefinition {
   path: string
@@ -55,6 +56,27 @@ export function normalizeFishModel(source: THREE.Object3D, rotationY: number): T
   return group
 }
 
+/** Keep the skin, bone hierarchy, and animation target names intact. */
+function normalizeAnimatedFish(source: THREE.Object3D, rotationY: number): THREE.Group {
+  const group = new THREE.Group()
+  const correction = new THREE.Group()
+  correction.rotation.y = rotationY
+  correction.add(source)
+  group.add(correction)
+  group.updateMatrixWorld(true)
+  const bounds = new THREE.Box3().setFromObject(group)
+  const size = bounds.getSize(new THREE.Vector3())
+  if (bounds.isEmpty() || !Number.isFinite(size.x) || size.x <= 0) throw new Error('鱼模型缺少有效的网格')
+  correction.position.sub(bounds.getCenter(new THREE.Vector3()))
+  group.scale.setScalar(1 / size.x)
+  return group
+}
+
+interface FishTemplate {
+  group: THREE.Group
+  clips: THREE.AnimationClip[]
+}
+
 function materialsOf(object: THREE.Object3D): THREE.Material[] {
   const materials = new Set<THREE.Material>()
   object.traverse(node => {
@@ -66,8 +88,10 @@ function materialsOf(object: THREE.Object3D): THREE.Material[] {
 function disposeTemplate(template: THREE.Object3D, withTextures = true) {
   const geometries = new Set<THREE.BufferGeometry>()
   const textures = new Set<THREE.Texture>()
+  const skeletons = new Set<THREE.Skeleton>()
   template.traverse(object => {
     if (object instanceof THREE.Mesh) geometries.add(object.geometry)
+    if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton)
   })
   for (const material of materialsOf(template)) {
     if (withTextures) for (const value of Object.values(material)) if (value instanceof THREE.Texture) textures.add(value)
@@ -75,32 +99,44 @@ function disposeTemplate(template: THREE.Object3D, withTextures = true) {
   }
   for (const geometry of geometries) geometry.dispose()
   for (const texture of textures) texture.dispose()
+  for (const skeleton of skeletons) skeleton.dispose()
 }
 
 export class FishModelLibrary {
   constructor(private loader: Pick<GLTFLoader, 'loadAsync'> = new GLTFLoader()) {}
-  private cache = new Map<string, Promise<THREE.Group>>()
+  private cache = new Map<string, Promise<FishTemplate>>()
   private templates = new Set<THREE.Group>()
   private disposed = false
 
-  private load(definition: FishModelDefinition): Promise<THREE.Group> {
+  private load(definition: FishModelDefinition): Promise<FishTemplate> {
     const key = `${definition.path}:${definition.rotationY}`
     let promise = this.cache.get(key)
     if (!promise) {
       promise = this.loader.loadAsync(definition.path).then(gltf => {
         let template: THREE.Group
-        try {
-          template = normalizeFishModel(gltf.scene, definition.rotationY)
-        } finally {
-          // The normalized copy owns its own geometry/materials and retains the source textures.
-          disposeTemplate(gltf.scene, false)
+        const clips = gltf.animations ?? []
+        if (clips.length) {
+          // Flattening into ordinary meshes would discard the supplied skeleton and action.
+          try {
+            template = normalizeAnimatedFish(gltf.scene, definition.rotationY)
+          } catch (error) {
+            disposeTemplate(gltf.scene)
+            throw error
+          }
+        } else {
+          try {
+            template = normalizeFishModel(gltf.scene, definition.rotationY)
+          } finally {
+            // The normalized copy owns geometry/materials and retains source textures.
+            disposeTemplate(gltf.scene, false)
+          }
         }
         if (this.disposed) {
           disposeTemplate(template)
           throw new Error('鱼缸已经关闭')
         }
         this.templates.add(template)
-        return template
+        return { group: template, clips }
       }).catch(error => {
         this.cache.delete(key)
         throw error
@@ -116,9 +152,48 @@ export class FishModelLibrary {
     if (this.disposed) throw new Error('鱼缸已经关闭')
     const group = new THREE.Group()
     group.scale.setScalar(definition.length)
+    if (template.clips.length) {
+      const model = cloneSkeleton(template.group)
+      const actorMaterials: THREE.Material[] = []
+      const skeletons = new Set<THREE.Skeleton>()
+      model.traverse(object => {
+        if (!(object instanceof THREE.Mesh)) return
+        const materials = (Array.isArray(object.material) ? object.material : [object.material]).map(material => material.clone())
+        actorMaterials.push(...materials)
+        object.material = Array.isArray(object.material) ? materials : materials[0]!
+        object.userData.sharedFishResources = true
+        object.castShadow = true
+        // The animated tail can leave the bind-pose bounding sphere.
+        object.frustumCulled = false
+        if (object instanceof THREE.SkinnedMesh) skeletons.add(object.skeleton)
+      })
+      group.add(model)
+      const mixer = new THREE.AnimationMixer(model)
+      const clip = template.clips[0]!
+      mixer.clipAction(clip).setLoop(THREE.LoopRepeat, Infinity).play()
+      let previousTime: number | undefined
+      return {
+        group,
+        update(time, speed, phase) {
+          if (previousTime === undefined) {
+            // Each fish starts at its own point in the artist's cycle.
+            mixer.setTime(((phase / (Math.PI * 2) % 1 + 1) % 1) * clip.duration)
+          } else {
+            mixer.update(Math.max(0, time - previousTime) * THREE.MathUtils.clamp(0.85 + speed * 0.15, 0.8, 1.3))
+          }
+          previousTime = time
+        },
+        dispose() {
+          mixer.stopAllAction()
+          mixer.uncacheRoot(model)
+          for (const material of actorMaterials) material.dispose()
+          for (const skeleton of skeletons) skeleton.dispose()
+        },
+      }
+    }
     const uniforms = { uFishTime: { value: 0 }, uFishPhase: { value: 0 }, uFishSpeed: { value: 1 } }
     const actorMaterials: THREE.Material[] = []
-    template.traverse(object => {
+    template.group.traverse(object => {
       if (!(object instanceof THREE.Mesh)) return
       const sourceMaterials: THREE.Material[] = Array.isArray(object.material) ? object.material : [object.material]
       const materials = sourceMaterials.map(source => {

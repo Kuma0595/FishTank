@@ -1,9 +1,27 @@
 # 用户鱼模型接入
 
-## 资源
+## 白云金丝：当前骨骼动画版本
+
+- 用户提供的 Blender 原件保存在 `assets/source/whitecloud-swim.blend`，上传的外部原文件保持不变。
+- 网页实际加载 `public/models/fish/whitecloud-swim.glb`：1,683,316 字节、19,605 个三角面，内嵌一张 1024 × 1024 JPEG。
+- 保留头部、前身、中身、后身、尾柄、尾鳍六段骨骼及皮肤权重，播放原有“自然游动 · 4秒无缝循环”。原时间轴显示 1–120 帧，但动作的闭环终点在第 121 帧；导出包含 1–121 帧，确保 30 fps 下完整 4 秒和首尾姿态一致。
+- 仅导出鱼身和骨骼，展示相机与灯光不进入鱼缸。减面在骨骼变形之前完成，保留蒙皮、UV 与动作；原件的 108,920 个三角面减少至 19,605 个。
+- 缩略图继续使用 `public/models/fish/uploaded-fish.webp`，与本次文件里的同一鱼身和贴图对应。
+
+重新生成（需本机安装 Blender）：
+
+```sh
+/Applications/Blender.app/Contents/MacOS/Blender --background --disable-autoexec assets/source/whitecloud-swim.blend --python scripts/export-animated-fish.py -- public/models/fish/whitecloud-swim.glb
+```
+
+`src/fish-model.ts` 对带动画的模型保留节点层级，通过外层对象完成朝向、居中和尺寸校正；为每条鱼独立克隆骨骼并建立 AnimationMixer，错开起始相位循环播放。带原生动画的模型不再叠加程序化摆尾。几何、贴图和动作资源共享；材质、骨骼和播放状态独立，移出一条鱼不会影响其他鱼。
+
+骨骼独立性、动画循环、资源释放，以及实际 GLB 的六骨骼、蒙皮属性、4 秒时长与首尾旋转匹配均由 `src/fish-model.test.ts` 验证。
+
+## 旧版静态资源（保留原件）
 
 - 用户提供的 Tripo GLB 原件：`assets/source/uploaded-fish.glb`。
-- 网页实际加载：`public/models/fish/uploaded-fish.glb`。
+- 旧网页轻量版：`public/models/fish/uploaded-fish.glb`，当前白云金丝已改用上面的骨骼动画版本。
 - 与模型一致的渲染缩略图：`public/models/fish/uploaded-fish.webp`。
 
 原件 3,102,696 字节、108,920 个三角面、64,006 个顶点，包含一张 1024 × 1024 JPEG 基础色贴图；不含骨骼和动画。网页轻量版 1,064,256 字节、19,604 个三角面，保持原有纹理坐标和内嵌贴图，不依赖在线解码器或外部贴图 URL。
@@ -22,11 +40,11 @@ node scripts/optimize-fish.mjs assets/source/uploaded-fish.glb public/models/fis
 
 鱼模型归属由 `src/fish-assets.ts` 中的 `fishModelForSpecies` 固定声明，不再保存到鱼缸状态。旧存档的 `modelSpecies` 字段会在读取时丢弃，原有鱼种、数量及造景保持不变；旧映射不会再将模型应用到其他鱼种。新存档不含此字段。
 
-## 运行与动画
+## 静态模型的运行与动画
 
 `src/fish-model.ts` 使用 GLTFLoader 异步加载模型，烘焙原始节点变换、居中并统一长度，将原件的负 Z 朝向旋转为鱼运动系统的正 X 朝向。`src/fish-assets.ts` 保存资源路径、朝向校正和长度比例。
 
-这是一份静态模型。新增的程序化顶点变形会让身体与尾部沿横向小幅波动，并修正表面法线；每条鱼使用不同的相位，避免完全同步。现有游动、转向、喂食行为由鱼演员外层对象继续驱动。这不是新增了骨骼或专业游动动作，胸鳍等局部动作仍有提升空间。
+对于没有原生动画的静态模型（当前为宝莲灯），程序化顶点变形会让身体与尾部沿横向小幅波动，并修正表面法线；每条鱼使用不同的相位，避免完全同步。现有游动、转向、喂食行为由鱼演员外层对象继续驱动。白云金丝现在使用上文的原生骨骼动作。
 
 同一鱼缸中的多条鱼共享加载结果、几何与纹理，每条鱼独立拥有材质和动画参数。移出鱼只释放该鱼的材质；关闭鱼缸时统一释放共享资源。加载完成后会检查鱼是否仍然存在，避免已删除的鱼被异步回调重新加入。资源加载失败时保留原造型并给出提示。
 
